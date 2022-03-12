@@ -1,14 +1,15 @@
-const  resolve  = require('path').resolve;
-const { DefinePlugin, HotModuleReplacementPlugin } = require('webpack');
+import { resolve } from 'path';
 
-const TerserPlugin = require('terser-webpack-plugin');
+import { DefinePlugin, HotModuleReplacementPlugin } from 'webpack';
+import TerserPlugin from 'terser-webpack-plugin';
+import ESLintPlugin from 'eslint-webpack-plugin';
 
-const HtmlWebpackPlugin = require('html-webpack-plugin');
+import HtmlWebpackPlugin from 'html-webpack-plugin';
 
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
 
-const packageJSON = require('./package.json');
+import packageJSON from './package.json';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -18,7 +19,7 @@ const HtmlWebpackPluginInstance = new HtmlWebpackPlugin({
 	favicon: resolve(__dirname, './public/favicon.ico'),
 	filename: 'index.html',
 	inject: true,
-	title: 'Webpack 5',
+	title: 'Webpack-5',
 	meta: {
 		description: packageJSON.description,
 		keywords: Array.isArray(packageJSON.keywords) && packageJSON.keywords.join(','),
@@ -33,7 +34,7 @@ const HtmlWebpackPluginInstance = new HtmlWebpackPlugin({
 		removeComments: true,
 		useShortDoctype: true
 	},
-	template: resolve(__dirname, './src/html/index.html'),
+	template: resolve(__dirname, './public/index.html'),
 	version: packageJSON.version
 });
 
@@ -41,23 +42,18 @@ const MiniCssExtractPluginInstance = new MiniCssExtractPlugin({
 	filename: '[name].[fullhash:8].css'
 });
 
-const stats = {
-	colors: {
-		green: '\u001b[32m'
-	},
-	assets: false,
-	modules: false,
-	timings: false,
-	version: false,
-	entrypoints: false,
-	warnings: true
-};
+const ESLintPluginInstance = new ESLintPlugin({
+	extensions: ['js', 'jsx', 'ts', 'tsx'],
+	failOnError: isDev,
+	context: resolve(__dirname, 'src'),
+	cache: true,
+	cacheLocation: resolve(__dirname, 'node_modules/.cache/.eslintcache'),
+	cwd: resolve(__dirname, '.'),
+	resolvePluginsRelativeTo: __dirname
+});
 
 const devServer = {
 	historyApiFallback: true,
-	static: {
-		directory: resolve(__dirname, 'src'),
-	},
 	hot: true,
 	open: true,
 	port: 3002,
@@ -78,10 +74,8 @@ const config = {
 
 	bail: true,
 
-	stats,
-
 	entry: {
-		main: resolve('./src/index.js')
+		main: resolve('./src/index.tsx')
 	},
 
 	output: {
@@ -93,6 +87,11 @@ const config = {
 
 	module: {
 		rules: [
+			{
+				test: /\.tsx?$/,
+				loader: 'ts-loader',
+				exclude: /node_modules/
+			},
 			{
 				test: /\.js$/,
 				loader: 'source-map-loader',
@@ -142,7 +141,7 @@ const config = {
 				generator: {
 					filename: 'assets/fonts/[name].[hash:8][ext]'
 				}
-			},
+			}
 		]
 	},
 
@@ -164,17 +163,20 @@ const config = {
 	},
 
 	resolve: {
-		extensions: ['.js', '.css', '.scss', '.sass'],
+		extensions: ['.js', '.jsx', '.ts', '.tsx', '.css', '.scss', '.sass'],
 		fallback: { process: require.resolve('process/browser') }
 	},
 
 	plugins: [
 		HtmlWebpackPluginInstance,
 		MiniCssExtractPluginInstance,
+		ESLintPluginInstance,
 		HotModuleReplacementInstance,
 		new DefinePlugin({
 			'process.env': {
+				TS_NODE_PROJECT: JSON.stringify(process.env.TS_NODE_PROJECT),
 				NODE_ENV: JSON.stringify(process.env.NODE_ENV),
+				API_DEV_ENDPOINT: JSON.stringify(process.env.API_DEV_ENDPOINT)
 			}
 		})
 	]
